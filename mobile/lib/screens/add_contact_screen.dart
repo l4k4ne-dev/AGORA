@@ -18,7 +18,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
   bool _showQrScanner = false;
   bool _isLoading = false;
   String? _scannedData;
-  bool _isSuccess = false;
 
   @override
   void dispose() {
@@ -55,7 +54,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
 
     setState(() {
       _isLoading = true;
-      _isSuccess = false;
     });
 
     try {
@@ -67,7 +65,6 @@ class _AddContactScreenState extends State<AddContactScreen> {
       
       if (success) {
         setState(() {
-          _isSuccess = true;
           _isLoading = false;
         });
         

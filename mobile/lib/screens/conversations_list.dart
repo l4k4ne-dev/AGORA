@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:agora_mobile/services/storage_service.dart';
+import 'package:agora_app/services/storage_service.dart';
 import 'chat_screen.dart';
 import 'add_contact_screen.dart';
 
