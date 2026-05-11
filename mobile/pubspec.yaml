@@ -1,0 +1,27 @@
+name: agora_app
+description: A secure P2P messaging client for Agora.
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.2
+  http: ^1.1.0
+  shared_preferences: ^2.2.0
+  pointycastle: ^3.7.3
+  qr_flutter: ^4.1.0
+  mobile_scanner: ^3.5.4
+  intl: ^0.19.0
+  path_provider: ^2.1.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true
