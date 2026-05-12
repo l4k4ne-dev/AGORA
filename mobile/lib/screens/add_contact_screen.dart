@@ -95,10 +95,12 @@ class _AddContactScreenState extends State<AddContactScreen> {
   }
 
   void _showMyQRCode() async {
-    // Get user's peer ID from storage to show in QR code
     final identity = await StorageService.getIdentity();
     final peerId = identity?.peerId ?? 'No identity yet';
-    
+    final publicKey = identity?.publicKey ?? '';
+    // QR encodes "peerId:publicKey" so the other side gets both
+    final qrData = '$peerId:$publicKey';
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -107,7 +109,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             QrImageView(
-              data: peerId,
+              data: qrData,
               version: QrVersions.auto,
               size: 200.0,
             ),
