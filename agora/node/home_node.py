@@ -260,7 +260,11 @@ class HomeNode:
         app = web.Application()
         app.router.add_get("/status", self._rest_status)
         app.router.add_get("/messages/{peer_id}", self._rest_messages)
+        app.router.add_get("/messages/pending/{peer_id}", self._rest_messages)
+        app.router.add_post("/messages/send", self._rest_send_message)
         app.router.add_delete("/messages/{msg_id}", self._rest_delete_message)
+        app.router.add_post("/contacts", self._rest_add_contact)
+        app.router.add_get("/contacts", self._rest_get_contacts)
         return app
 
     async def _rest_status(self, request: web.Request) -> web.Response:
@@ -304,6 +308,44 @@ class HomeNode:
         msg_id = request.match_info["msg_id"]
         self.store.mark_delivered(msg_id)
         return web.json_response({"deleted": msg_id})
+
+    async def _rest_send_message(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+            peer_id = data.get("peer_id", "")
+            content = data.get("encrypted_content", "")
+            msg_id = str(uuid.uuid4())
+            self.store.store_message(msg_id, "self", peer_id, content.encode(), int(time.time()))
+            return web.json_response({"ok": True, "msg_id": msg_id})
+        except Exception as e:
+            return web.json_response({"ok": False, "error": str(e)}, status=400)
+
+    async def _rest_add_contact(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+            peer_id = data.get("peer_id", "")
+            public_key = data.get("public_key", "")
+            self.store.conn.execute(
+                "INSERT OR REPLACE INTO contacts (id, public_key, name, added_at) VALUES (?, ?, ?, ?)",
+                (peer_id, bytes.fromhex(public_key) if public_key else b"", data.get("name", ""), int(time.time()))
+            )
+            self.store.conn.commit()
+            return web.json_response({"ok": True})
+        except Exception as e:
+            return web.json_response({"ok": False, "error": str(e)}, status=400)
+
+    async def _rest_get_contacts(self, request: web.Request) -> web.Response:
+        try:
+            rows = self.store.conn.execute(
+                "SELECT id, name, public_key, added_at FROM contacts"
+            ).fetchall()
+            contacts = [
+                {"id": r[0], "name": r[1] or r[0], "public_key": r[2].hex() if r[2] else "", "added_at": r[3]}
+                for r in rows
+            ]
+            return web.json_response(contacts)
+        except Exception as e:
+            return web.json_response({"error": str(e)}, status=500)
 
     # ── Lifecycle ──────────────────────────────
 
