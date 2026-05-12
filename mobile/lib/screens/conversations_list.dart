@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:agora_app/services/storage_service.dart';
+import 'package:agora_app/services/api_service.dart';
 import 'chat_screen.dart';
 import 'add_contact_screen.dart';
 
@@ -18,6 +19,38 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
   void initState() {
     super.initState();
     _loadContacts();
+  }
+
+  Future<void> _showNodeSettings() async {
+    final currentUrl = await ApiService.getNodeUrl();
+    final controller = TextEditingController(text: currentUrl);
+    if (!mounted) return;
+    await showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Node Settings'),
+        content: TextField(
+          controller: controller,
+          decoration: const InputDecoration(
+            labelText: 'Home Node URL',
+            hintText: 'http://192.168.x.x:8080',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              await ApiService.setNodeUrl(controller.text.trim());
+              if (ctx.mounted) Navigator.pop(ctx);
+            },
+            child: const Text('Save'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _loadContacts() async {
@@ -52,6 +85,10 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
           IconButton(
             icon: const Icon(Icons.refresh),
             onPressed: _loadContacts,
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: _showNodeSettings,
           ),
         ],
       ),

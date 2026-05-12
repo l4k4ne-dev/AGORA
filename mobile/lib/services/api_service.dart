@@ -1,14 +1,26 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Pentru Android emulator: 10.0.2.2
-  // Pentru iOS simulator: 127.0.0.1
-  // Pentru device fizic în același LAN: IP-ul mașinii host
-  static const String baseUrl = 'http://10.0.2.2:8080';
+  static const String _nodeUrlKey = 'node_url';
+  static const String _defaultUrl = 'http://10.0.2.2:8080';
 
-  /// Verifică statusul node-ului
+  /// Get the configured node URL
+  static Future<String> getNodeUrl() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString(_nodeUrlKey) ?? _defaultUrl;
+  }
+
+  /// Set the node URL
+  static Future<void> setNodeUrl(String url) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_nodeUrlKey, url);
+  }
+
+  /// Verifica statusul node-ului
   static Future<Map<String, dynamic>> getStatus() async {
+    final baseUrl = await getNodeUrl();
     try {
       final response = await http.get(Uri.parse('$baseUrl/status'));
       if (response.statusCode == 200) {
@@ -23,6 +35,7 @@ class ApiService {
 
   /// Trimite un mesaj
   static Future<bool> sendMessage(String peerId, String encryptedContent) async {
+    final baseUrl = await getNodeUrl();
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/messages/send'),
@@ -38,8 +51,9 @@ class ApiService {
     }
   }
 
-  /// Primește mesaje pending
+  /// Primeste mesaje pending
   static Future<List<Map<String, dynamic>>> getPendingMessages(String peerId) async {
+    final baseUrl = await getNodeUrl();
     try {
       final response = await http.get(Uri.parse('$baseUrl/messages/pending/$peerId'));
       if (response.statusCode == 200) {
@@ -56,8 +70,9 @@ class ApiService {
     }
   }
 
-  /// Adaugă un contact
+  /// Adauga un contact
   static Future<bool> addContact(String peerId, String publicKey) async {
+    final baseUrl = await getNodeUrl();
     try {
       final response = await http.post(
         Uri.parse('$baseUrl/contacts'),
@@ -73,8 +88,9 @@ class ApiService {
     }
   }
 
-  /// Listează contactele
+  /// Listeaza contactele
   static Future<List<Map<String, dynamic>>> getContacts() async {
+    final baseUrl = await getNodeUrl();
     try {
       final response = await http.get(Uri.parse('$baseUrl/contacts'));
       if (response.statusCode == 200) {
