@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:agora_app/services/api_service.dart';
+import 'dart:async';
 
 class ChatScreen extends StatefulWidget {
   final String peerId;
@@ -24,6 +25,20 @@ class _ChatScreenState extends State<ChatScreen> {
   void initState() {
     super.initState();
     _loadMessages();
+    _startPolling();
+  }
+
+  Timer? _pollingTimer;
+
+  void _startPolling() {
+    _pollingTimer = Timer.periodic(const Duration(seconds: 3), (_) => _loadMessages());
+  }
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _pollingTimer?.cancel();
+    super.dispose();
   }
 
   Future<void> _loadMessages() async {
@@ -66,7 +81,7 @@ class _ChatScreenState extends State<ChatScreen> {
       // În producție, aici ar trebui criptat mesajul cu cheia publică
       // Pentru MVP, trimitem ca text simplu (simulat criptat)
       final success = await ApiService.sendMessage(widget.peerId, content);
-      
+    
       if (success) {
         setState(() {
           _messages.add({
@@ -192,9 +207,4 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  @override
-  void dispose() {
-    _messageController.dispose();
-    super.dispose();
-  }
 }
