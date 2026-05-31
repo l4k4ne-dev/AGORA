@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:pointycastle/export.dart';
+import 'package:cryptography/cryptography.dart';
 
 class Identity {
   final String peerId;
@@ -14,35 +14,7 @@ class Identity {
     required this.privateKey,
   });
 
-  /// Generate a real X25519 identity
-  static Future<Identity> generate() async {
-    // Generate 32 cryptographically random bytes for private key
-    final rng = Random.secure();
-    final privBytes = Uint8List.fromList(
-      List<int>.generate(32, (_) => rng.nextInt(256)),
-    );
-
-    // Clamp private key per X25519 spec
-    privBytes[0] &= 248;
-    privBytes[31] &= 127;
-    privBytes[31] |= 64;
-
-    // Derive public key using X25519
-    final x25519 = X25519();
-    final pubBytes = x25519.scalarMultBase(privBytes);
-
-    final privHex = _bytesToHex(privBytes);
-    final pubHex = _bytesToHex(pubBytes);
-    final peerId = base64UrlEncode(pubBytes).replaceAll('=', '').substring(0, 16);
-
-    return Identity(
-      peerId: peerId,
-      publicKey: pubHex,
-      privateKey: privHex,
-    );
-  }
-
-  static String _bytesToHex(Uint8List bytes) =>
+  static String _bytesToHex(List<int> bytes) =>
       bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
 
   static Uint8List _hexToBytes(String hex) {
@@ -53,10 +25,25 @@ class Identity {
     return result;
   }
 
-  /// Public key as bytes
-  Uint8List get publicKeyBytes => _hexToBytes(publicKey);
+  static Future<Identity> generate() async {
+    final algorithm = X25519();
+    final keyPair = await algorithm.newKeyPair();
+    final pubKey = await keyPair.extractPublicKey();
+    final privKeyBytes = await keyPair.extractPrivateKeyBytes();
 
-  /// Private key as bytes
+    final pubBytes = pubKey.bytes;
+    final privHex = _bytesToHex(privKeyBytes);
+    final pubHex = _bytesToHex(pubBytes);
+    final peerId = base64UrlEncode(pubBytes).replaceAll('=', '').substring(0, 16);
+
+    return Identity(
+      peerId: peerId,
+      publicKey: pubHex,
+      privateKey: privHex,
+    );
+  }
+
+  Uint8List get publicKeyBytes => _hexToBytes(publicKey);
   Uint8List get privateKeyBytes => _hexToBytes(privateKey);
 
   Map<String, String> toJson() => {
