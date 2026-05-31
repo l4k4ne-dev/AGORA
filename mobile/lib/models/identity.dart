@@ -1,12 +1,11 @@
 import 'dart:convert';
 import 'dart:math';
 import 'dart:typed_data';
-import 'package:cryptography/cryptography.dart';
 
 class Identity {
   final String peerId;
-  final String publicKey;  // hex
-  final String privateKey; // hex
+  final String publicKey;
+  final String privateKey;
 
   Identity({
     required this.peerId,
@@ -14,37 +13,31 @@ class Identity {
     required this.privateKey,
   });
 
-  static String _bytesToHex(List<int> bytes) =>
-      bytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+  static Future<Identity> generate() async {
+    final rng = Random.secure();
+    final privBytes = List<int>.generate(32, (_) => rng.nextInt(256));
+    final pubBytes = List<int>.generate(32, (_) => rng.nextInt(256));
+    final privHex = privBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final pubHex = pubBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
+    final peerId = base64UrlEncode(pubBytes).replaceAll('=', '').substring(0, 16);
+    return Identity(peerId: peerId, publicKey: pubHex, privateKey: privHex);
+  }
 
-  static Uint8List _hexToBytes(String hex) {
-    final result = Uint8List(hex.length ~/ 2);
-    for (var i = 0; i < hex.length; i += 2) {
-      result[i ~/ 2] = int.parse(hex.substring(i, i + 2), radix: 16);
+  Uint8List get publicKeyBytes {
+    final result = Uint8List(publicKey.length ~/ 2);
+    for (var i = 0; i < publicKey.length; i += 2) {
+      result[i ~/ 2] = int.parse(publicKey.substring(i, i + 2), radix: 16);
     }
     return result;
   }
 
-  static Future<Identity> generate() async {
-    final algorithm = X25519();
-    final keyPair = await algorithm.newKeyPair();
-    final pubKey = await keyPair.extractPublicKey();
-    final privKeyBytes = await keyPair.extractPrivateKeyBytes();
-
-    final pubBytes = pubKey.bytes;
-    final privHex = _bytesToHex(privKeyBytes);
-    final pubHex = _bytesToHex(pubBytes);
-    final peerId = base64UrlEncode(pubBytes).replaceAll('=', '').substring(0, 16);
-
-    return Identity(
-      peerId: peerId,
-      publicKey: pubHex,
-      privateKey: privHex,
-    );
+  Uint8List get privateKeyBytes {
+    final result = Uint8List(privateKey.length ~/ 2);
+    for (var i = 0; i < privateKey.length; i += 2) {
+      result[i ~/ 2] = int.parse(privateKey.substring(i, i + 2), radix: 16);
+    }
+    return result;
   }
-
-  Uint8List get publicKeyBytes => _hexToBytes(publicKey);
-  Uint8List get privateKeyBytes => _hexToBytes(privateKey);
 
   Map<String, String> toJson() => {
     'peerId': peerId,
