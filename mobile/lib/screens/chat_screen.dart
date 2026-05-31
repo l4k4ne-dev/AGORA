@@ -44,16 +44,19 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _isLoading = true);
     try {
       final pending = await ApiService.getPendingMessages(widget.peerId);
-      if (mounted) {
+      if (mounted && pending.isNotEmpty) {
         setState(() {
-          _messages.clear();
-          _messages.addAll(pending.map((m) => {
-            'content': m['encrypted_content'] ?? '',
-            'isMe': false,
-            'timestamp': DateTime.now(),
-          }));
+          for (final m in pending) {
+            final content = m['encrypted_content'] ?? '';
+            final alreadyExists = _messages.any((msg) => msg['content'] == content && msg['isMe'] == false);
+            if (!alreadyExists) {
+              _messages.add({'content': content, 'isMe': false, 'timestamp': DateTime.now()});
+            }
+          }
           _isLoading = false;
         });
+      } else if (mounted) {
+        setState(() => _isLoading = false);
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);

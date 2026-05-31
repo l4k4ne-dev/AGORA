@@ -315,7 +315,7 @@ class HomeNode:
             peer_id = data.get("peer_id", "")
             content = data.get("encrypted_content", "")
             msg_id = str(uuid.uuid4())
-            self.store.store_message(msg_id, "self", peer_id, content.encode(), int(time.time()))
+            self.store.store_message(msg_id, "self", peer_id, content.encode())
             return web.json_response({"ok": True, "msg_id": msg_id})
         except Exception as e:
             return web.json_response({"ok": False, "error": str(e)}, status=400)
