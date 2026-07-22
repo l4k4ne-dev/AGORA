@@ -3,14 +3,7 @@ cryptography>=42.0.0
 pynacl>=1.5.0
 
 # Networking
-asyncio
 aiohttp>=3.9.0
-
-# P2P
-# libp2p (to be added)
-
-# Storage
-sqlite3  # built-in
 
 # Utils
 pydantic>=2.0.0
