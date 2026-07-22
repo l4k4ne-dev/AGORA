@@ -36,6 +36,7 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   bool _isInitializing = true;
   String _statusMessage = 'Initializing...';
+  bool _showMigrationDialog = false;
 
   @override
   void initState() {
@@ -54,21 +55,50 @@ class _SplashScreenState extends State<SplashScreen> {
       final (_, wasNewlyGenerated) =
           await StorageService.loadOrCreateIdentity();
 
+      if (wasNewlyGenerated) {
+        // Clear stale contacts — they were tied to invalid legacy keys.
+        await StorageService.clearContacts();
+      }
+
       setState(() {
         _statusMessage =
             wasNewlyGenerated ? 'Identity created!' : 'Identity loaded';
+        _showMigrationDialog = wasNewlyGenerated;
       });
       
       // Așteaptă puțin pentru UX
       await Future.delayed(const Duration(seconds: 1));
-      
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const ConversationsListScreen(),
+
+      if (!mounted) return;
+
+      if (_showMigrationDialog) {
+        await showDialog<void>(
+          context: context,
+          barrierDismissible: false,
+          builder: (ctx) => AlertDialog(
+            title: const Text('🔐 Identity regenerated'),
+            content: const Text(
+              'Your Agora identity has been regenerated with real cryptographic keys.\n\n'
+              '• Old contacts must re-add you (you have a new peer ID)\n'
+              '• Your keys are stored securely on this device only\n'
+              '• Current build is NOT E2E yet — rebuild in progress',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: const Text('OK'),
+              ),
+            ],
           ),
         );
       }
+
+      if (!mounted) return;
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const ConversationsListScreen(),
+        ),
+      );
     } catch (e) {
       setState(() {
         _isInitializing = false;
