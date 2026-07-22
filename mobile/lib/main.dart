@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'screens/conversations_list.dart';
 import 'services/storage_service.dart';
-import 'models/identity.dart';
 
 void main() {
   runApp(const AgoraApp());
@@ -46,25 +45,19 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _initializeApp() async {
     try {
-      final hasIdentity = await StorageService.hasIdentity();
-      
-      if (!hasIdentity) {
-        setState(() {
-          _statusMessage = 'Generating identity...';
-        });
-        
-        // Generează identitate nouă
-        final identity = await Identity.generate();
-        await StorageService.saveIdentity(identity);
-        
-        setState(() {
-          _statusMessage = 'Identity created!';
-        });
-      } else {
-        setState(() {
-          _statusMessage = 'Loading identity...';
-        });
-      }
+      setState(() {
+        _statusMessage = 'Loading identity...';
+      });
+
+      // Real cryptographic identity via secure storage.
+      // Auto-migrates legacy SharedPreferences identity (destructive).
+      final (_, wasNewlyGenerated) =
+          await StorageService.loadOrCreateIdentity();
+
+      setState(() {
+        _statusMessage =
+            wasNewlyGenerated ? 'Identity created!' : 'Identity loaded';
+      });
       
       // Așteaptă puțin pentru UX
       await Future.delayed(const Duration(seconds: 1));

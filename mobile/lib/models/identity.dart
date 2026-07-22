@@ -1,53 +1,22 @@
-import 'dart:convert';
-import 'dart:math';
-import 'dart:typed_data';
+import '../agora_crypto/identity.dart';
+import '../agora_crypto/keys.dart';
 
+/// Public-facing identity view (backward-compatible interface for UI/services).
+/// Wraps the real cryptographic AgoraIdentity from agora_crypto.
 class Identity {
-  final String peerId;
-  final String publicKey;
-  final String privateKey;
+  final AgoraIdentity _internal;
 
-  Identity({
-    required this.peerId,
-    required this.publicKey,
-    required this.privateKey,
-  });
+  Identity(this._internal);
 
-  static Future<Identity> generate() async {
-    final rng = Random.secure();
-    final privBytes = List<int>.generate(32, (_) => rng.nextInt(256));
-    final pubBytes = List<int>.generate(32, (_) => rng.nextInt(256));
-    final privHex = privBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    final pubHex = pubBytes.map((b) => b.toRadixString(16).padLeft(2, '0')).join();
-    final peerId = base64UrlEncode(pubBytes).replaceAll('=', '').substring(0, 16);
-    return Identity(peerId: peerId, publicKey: pubHex, privateKey: privHex);
-  }
+  AgoraIdentity get raw => _internal;
 
-  Uint8List get publicKeyBytes {
-    final result = Uint8List(publicKey.length ~/ 2);
-    for (var i = 0; i < publicKey.length; i += 2) {
-      result[i ~/ 2] = int.parse(publicKey.substring(i, i + 2), radix: 16);
-    }
-    return result;
-  }
+  String get peerId => _internal.deviceId;
 
-  Uint8List get privateKeyBytes {
-    final result = Uint8List(privateKey.length ~/ 2);
-    for (var i = 0; i < privateKey.length; i += 2) {
-      result[i ~/ 2] = int.parse(privateKey.substring(i, i + 2), radix: 16);
-    }
-    return result;
-  }
+  /// Async — X25519 public key base64 (used for wire / QR / contacts).
+  Future<String> get publicKey async =>
+      X25519Keys.publicKeyBase64(_internal.x25519KeyPair);
 
-  Map<String, String> toJson() => {
-    'peerId': peerId,
-    'publicKey': publicKey,
-    'privateKey': privateKey,
-  };
-
-  factory Identity.fromJson(Map<String, String> json) => Identity(
-    peerId: json['peerId']!,
-    publicKey: json['publicKey']!,
-    privateKey: json['privateKey']!,
-  );
+  /// Async — Ed25519 identity public key base64.
+  Future<String> get identityPublicKey async =>
+      Ed25519Keys.publicKeyBase64(_internal.identityKeyPair);
 }

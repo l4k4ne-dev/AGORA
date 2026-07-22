@@ -97,7 +97,7 @@ class _AddContactScreenState extends State<AddContactScreen> {
   void _showMyQRCode() async {
     final identity = await StorageService.getIdentity();
     final peerId = identity?.peerId ?? 'No identity yet';
-    final publicKey = identity?.publicKey ?? '';
+    final publicKey = identity == null ? '' : await identity.publicKey;
     // QR encodes "peerId:publicKey" so the other side gets both
     final qrData = '$peerId:$publicKey';
 
